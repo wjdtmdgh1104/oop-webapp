@@ -1,0 +1,848 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>OOP 다형성 — 스마트폰 앱 테마</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;900&family=Fira+Code:wght@400;600&display=swap');
+    body { font-family: 'Noto Sans KR', sans-serif; background: #0a0a14; }
+    .code { font-family: 'Fira Code', monospace; }
+
+    /* ── 폰 목업 ── */
+    .phone {
+      width: 300px;
+      height: 580px;
+      border-radius: 42px;
+      background: #111827;
+      border: 3px solid #374151;
+      box-shadow: 0 0 0 1px #1f2937, 0 30px 80px rgba(0,0,0,0.7), inset 0 0 0 2px #1f2937;
+      position: relative;
+      overflow: hidden;
+    }
+    .phone-notch {
+      width: 100px; height: 26px;
+      background: #111827;
+      border-radius: 0 0 18px 18px;
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      z-index: 20;
+      border: 2px solid #374151;
+      border-top: none;
+    }
+    .phone-screen {
+      width: 100%; height: 100%;
+      border-radius: 40px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ── 앱 아이콘 ── */
+    .app-icon {
+      cursor: pointer;
+      transition: transform 0.15s, filter 0.15s;
+      border-radius: 20px;
+      overflow: hidden;
+    }
+    .app-icon:hover  { transform: scale(1.12); filter: brightness(1.2); }
+    .app-icon:active { transform: scale(0.93); }
+
+    /* ── 앱 화면 슬라이드 ── */
+    @keyframes slideUp {
+      from { transform: translateY(100%); opacity: 0.5; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+    @keyframes slideDown {
+      from { transform: translateY(0);    opacity: 1; }
+      to   { transform: translateY(100%); opacity: 0.5; }
+    }
+    .app-screen { animation: slideUp 0.32s cubic-bezier(.4,0,.2,1) forwards; }
+    .app-screen-out { animation: slideDown 0.25s ease forwards; }
+
+    /* ── 알림 토스트 ── */
+    @keyframes toastIn {
+      from { transform: translateY(-60px) scale(0.95); opacity: 0; }
+      to   { transform: translateY(0)      scale(1);    opacity: 1; }
+    }
+    @keyframes toastOut {
+      from { transform: translateY(0)      opacity: 1; }
+      to   { transform: translateY(-60px); opacity: 0; }
+    }
+    .toast { animation: toastIn 0.3s ease forwards; }
+
+    /* ── 버튼 펄스 ── */
+    @keyframes pulse-ring {
+      0%   { box-shadow: 0 0 0 0 currentColor; }
+      70%  { box-shadow: 0 0 0 8px transparent; }
+      100% { box-shadow: 0 0 0 0 transparent; }
+    }
+    .pulse { animation: pulse-ring 1.5s infinite; }
+
+    /* ── UML 노드 ── */
+    .uml-node { cursor: pointer; transition: transform 0.15s, box-shadow 0.15s; }
+    .uml-node:hover { transform: translateY(-4px); }
+    .uml-selected { outline: 2.5px solid #818cf8; outline-offset: 3px; }
+
+    /* ── 로그 ── */
+    @keyframes fadeSlide {
+      from { opacity:0; transform: translateX(-8px); }
+      to   { opacity:1; transform: translateX(0); }
+    }
+    .log-entry { animation: fadeSlide 0.25s ease forwards; }
+
+    /* ── 배터리 바 ── */
+    .battery-bar { transition: width 0.5s ease; }
+
+    /* ── 스크롤바 ── */
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #374151; border-radius: 9999px; }
+  </style>
+</head>
+<body class="min-h-screen text-gray-100">
+
+<!-- ── HEADER ── -->
+<header class="bg-gray-900/80 backdrop-blur border-b border-gray-800 px-6 py-4 flex items-center justify-between sticky top-0 z-50">
+  <div>
+    <h1 class="text-2xl font-bold text-indigo-400">📱 OOP 다형성 — 스마트폰 앱</h1>
+    <p class="text-xs text-gray-500 mt-0.5">2026 자료구조 과제 2 · App(ADT) → SocialApp / GameApp / UtilityApp</p>
+  </div>
+  <span class="code text-xs bg-gray-800 text-indigo-300 px-3 py-1 rounded-full">HTML5 + Vanilla JS</span>
+</header>
+
+<main class="max-w-7xl mx-auto px-4 py-10 space-y-16">
+
+<!-- ══════════════════════════════════════════
+     SECTION 1 — UML
+══════════════════════════════════════════ -->
+<section>
+  <h2 class="text-lg font-semibold text-indigo-300 mb-1">① 클래스 상속 구조 (UML)</h2>
+  <p class="text-sm text-gray-500 mb-8">노드를 클릭하면 클래스 상세 정보가 표시됩니다.</p>
+
+  <div class="flex flex-col items-center">
+    <!-- Abstract Base -->
+    <div id="uml-App"
+         class="uml-node bg-indigo-950/70 border-2 border-indigo-500 rounded-xl px-7 py-4 w-80 text-center shadow-xl shadow-indigo-900/30"
+         onclick="showUmlInfo('App')">
+      <div class="code text-xs text-indigo-400 mb-1">&lt;&lt;Abstract Class&gt;&gt;</div>
+      <div class="text-xl font-bold text-indigo-200">App</div>
+      <hr class="border-indigo-800 my-2"/>
+      <div class="code text-left text-xs text-gray-300 space-y-0.5">
+        <div>+ name : str</div>
+        <div>+ version : str</div>
+        <div>+ size_mb : float</div>
+        <div>+ battery : int</div>
+        <div>+ is_running : bool</div>
+      </div>
+      <hr class="border-indigo-800 my-2"/>
+      <div class="code text-left text-xs space-y-0.5">
+        <div class="text-yellow-400">+ launch() → <em>abstract</em></div>
+        <div class="text-yellow-400">+ notify() → <em>abstract</em></div>
+        <div class="text-gray-300">+ close() : void</div>
+        <div class="text-gray-300">+ get_info() : str</div>
+      </div>
+    </div>
+
+    <!-- vertical -->
+    <div class="w-0.5 h-8 bg-indigo-700"></div>
+    <!-- horizontal bar -->
+    <div class="relative w-full flex justify-center" style="height:2px">
+      <div class="absolute top-0 left-1/2 -translate-x-1/2 h-0.5 bg-indigo-700" style="width:62%"></div>
+    </div>
+
+    <!-- 3 subclasses -->
+    <div class="flex gap-5 mt-0 flex-wrap justify-center">
+
+      <!-- SocialApp -->
+      <div class="flex flex-col items-center">
+        <div class="w-0.5 h-8 bg-indigo-700"></div>
+        <div id="uml-SocialApp"
+             class="uml-node bg-pink-950/70 border-2 border-pink-500 rounded-xl px-5 py-4 w-56 shadow-lg shadow-pink-900/20"
+             onclick="showUmlInfo('SocialApp')">
+          <div class="code text-xs text-pink-400 mb-1">extends App</div>
+          <div class="text-base font-bold text-pink-200">SocialApp</div>
+          <hr class="border-pink-900 my-2"/>
+          <div class="code text-xs text-gray-300 space-y-0.5">
+            <div>+ followers : int</div>
+            <div>+ posts : List</div>
+            <div>+ unread : int</div>
+          </div>
+          <hr class="border-pink-900 my-2"/>
+          <div class="code text-xs space-y-0.5">
+            <div class="text-yellow-300">▶ launch() <span class="text-pink-400">[override]</span></div>
+            <div class="text-gray-500 text-xs pl-1">→ 피드 열기, 팔로워 표시</div>
+            <div class="text-yellow-300">▶ notify() <span class="text-pink-400">[override]</span></div>
+            <div class="text-gray-500 text-xs pl-1">→ 새 팔로워/메시지 알림</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- GameApp -->
+      <div class="flex flex-col items-center">
+        <div class="w-0.5 h-8 bg-indigo-700"></div>
+        <div id="uml-GameApp"
+             class="uml-node bg-amber-950/70 border-2 border-amber-500 rounded-xl px-5 py-4 w-56 shadow-lg shadow-amber-900/20"
+             onclick="showUmlInfo('GameApp')">
+          <div class="code text-xs text-amber-400 mb-1">extends App</div>
+          <div class="text-base font-bold text-amber-200">GameApp</div>
+          <hr class="border-amber-900 my-2"/>
+          <div class="code text-xs text-gray-300 space-y-0.5">
+            <div>+ score : int</div>
+            <div>+ lives : int</div>
+            <div>+ level : int</div>
+            <div>+ high_score : int</div>
+          </div>
+          <hr class="border-amber-900 my-2"/>
+          <div class="code text-xs space-y-0.5">
+            <div class="text-yellow-300">▶ launch() <span class="text-amber-400">[override]</span></div>
+            <div class="text-gray-500 text-xs pl-1">→ 게임 시작, 점수 표시</div>
+            <div class="text-yellow-300">▶ notify() <span class="text-amber-400">[override]</span></div>
+            <div class="text-gray-500 text-xs pl-1">→ 업적 달성 알림</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- UtilityApp -->
+      <div class="flex flex-col items-center">
+        <div class="w-0.5 h-8 bg-indigo-700"></div>
+        <div id="uml-UtilityApp"
+             class="uml-node bg-cyan-950/70 border-2 border-cyan-500 rounded-xl px-5 py-4 w-56 shadow-lg shadow-cyan-900/20"
+             onclick="showUmlInfo('UtilityApp')">
+          <div class="code text-xs text-cyan-400 mb-1">extends App</div>
+          <div class="text-base font-bold text-cyan-200">UtilityApp</div>
+          <hr class="border-cyan-900 my-2"/>
+          <div class="code text-xs text-gray-300 space-y-0.5">
+            <div>+ tasks : List</div>
+            <div>+ storage_used : int</div>
+            <div>+ reminders : int</div>
+          </div>
+          <hr class="border-cyan-900 my-2"/>
+          <div class="code text-xs space-y-0.5">
+            <div class="text-yellow-300">▶ launch() <span class="text-cyan-400">[override]</span></div>
+            <div class="text-gray-500 text-xs pl-1">→ 할 일 목록 열기</div>
+            <div class="text-yellow-300">▶ notify() <span class="text-cyan-400">[override]</span></div>
+            <div class="text-gray-500 text-xs pl-1">→ 리마인더 알림</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 클래스 정보 패널 -->
+  <div id="uml-panel" class="hidden mt-8 max-w-lg mx-auto bg-gray-900 border border-gray-700 rounded-xl p-5">
+    <p class="text-xs text-gray-500 mb-1">선택한 클래스</p>
+    <h3 id="up-title" class="text-lg font-bold mb-2"></h3>
+    <p  id="up-desc"  class="text-sm text-gray-300 leading-relaxed"></p>
+    <pre id="up-code" class="code text-xs mt-3 bg-gray-800 rounded-lg p-3 text-green-300 leading-relaxed whitespace-pre-wrap"></pre>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     SECTION 2 — 폰 목업 인터랙션
+══════════════════════════════════════════ -->
+<section>
+  <h2 class="text-lg font-semibold text-indigo-300 mb-1">② 다형성(Polymorphism) 데모</h2>
+  <p class="text-sm text-gray-500 mb-8">
+    앱 버튼을 눌러 <code class="code text-yellow-400">launch()</code>를,
+    🔔 버튼을 눌러 <code class="code text-yellow-400">notify()</code>를 호출하세요.
+    같은 메서드 이름이지만 클래스마다 다른 결과가 출력됩니다.
+  </p>
+
+  <div class="flex flex-col lg:flex-row gap-10 items-start justify-center">
+
+    <!-- ── 폰 목업 ── -->
+    <div class="flex-shrink-0 flex flex-col items-center">
+      <div class="phone">
+        <!-- 노치 -->
+        <div class="phone-notch"></div>
+        <!-- 화면 -->
+        <div class="phone-screen" id="phone-screen">
+          <!-- 홈 화면 -->
+          <div id="home-screen" class="w-full h-full flex flex-col"
+               style="background: linear-gradient(160deg, #1e1b4b 0%, #0f172a 50%, #0a0a14 100%)">
+            <!-- 상단 상태바 -->
+            <div class="flex justify-between items-center px-5 pt-8 pb-2 text-xs text-gray-400">
+              <span id="phone-time">09:41</span>
+              <div class="flex items-center gap-1.5">
+                <span class="text-xs" id="phone-battery-txt">85%</span>
+                <!-- 배터리 아이콘 -->
+                <div class="relative w-7 h-3.5 border border-gray-500 rounded-sm">
+                  <div id="phone-battery-bar"
+                       class="battery-bar absolute left-0 top-0 bottom-0 bg-green-500 rounded-sm"
+                       style="width:85%"></div>
+                  <div class="absolute -right-1.5 top-1/2 -translate-y-1/2 w-1 h-2 bg-gray-500 rounded-r-sm"></div>
+                </div>
+              </div>
+            </div>
+            <!-- 날짜 -->
+            <div class="text-center mt-4 mb-6">
+              <div class="text-4xl font-light text-white" id="phone-time-big">09:41</div>
+              <div class="text-sm text-gray-400 mt-1" id="phone-date">5월 27일 수요일</div>
+            </div>
+            <!-- 앱 아이콘 그리드 -->
+            <div class="flex-1 px-6">
+              <div class="grid grid-cols-3 gap-5 justify-items-center">
+                <!-- SocialApp -->
+                <div class="flex flex-col items-center gap-1.5">
+                  <div class="app-icon w-16 h-16 flex items-center justify-center text-3xl shadow-lg"
+                       style="background: linear-gradient(135deg, #ec4899, #8b5cf6)"
+                       onclick="launchApp('SocialApp')">📸</div>
+                  <span class="text-xs text-gray-300">Prism</span>
+                </div>
+                <!-- GameApp -->
+                <div class="flex flex-col items-center gap-1.5">
+                  <div class="app-icon w-16 h-16 flex items-center justify-center text-3xl shadow-lg"
+                       style="background: linear-gradient(135deg, #f59e0b, #ef4444)"
+                       onclick="launchApp('GameApp')">🎮</div>
+                  <span class="text-xs text-gray-300">ArcadeX</span>
+                </div>
+                <!-- UtilityApp -->
+                <div class="flex flex-col items-center gap-1.5">
+                  <div class="app-icon w-16 h-16 flex items-center justify-center text-3xl shadow-lg"
+                       style="background: linear-gradient(135deg, #06b6d4, #3b82f6)"
+                       onclick="launchApp('UtilityApp')">✅</div>
+                  <span class="text-xs text-gray-300">DoIt</span>
+                </div>
+              </div>
+            </div>
+            <!-- 독 -->
+            <div class="mx-4 mb-6 rounded-3xl px-5 py-3 flex justify-around"
+                 style="background:rgba(255,255,255,0.07); backdrop-filter:blur(8px)">
+              <div class="app-icon w-12 h-12 flex items-center justify-center text-2xl rounded-2xl bg-green-600"
+                   onclick="launchApp('SocialApp')">💬</div>
+              <div class="app-icon w-12 h-12 flex items-center justify-center text-2xl rounded-2xl bg-blue-600"
+                   onclick="launchApp('UtilityApp')">📁</div>
+              <div class="app-icon w-12 h-12 flex items-center justify-center text-2xl rounded-2xl bg-amber-600"
+                   onclick="launchApp('GameApp')">🏆</div>
+            </div>
+          </div>
+
+          <!-- 앱 화면 레이어 (JS로 삽입) -->
+          <div id="app-layer" class="absolute inset-0 hidden"></div>
+
+          <!-- 알림 토스트 레이어 -->
+          <div id="toast-layer" class="absolute top-12 left-3 right-3 z-30 space-y-2 pointer-events-none"></div>
+        </div>
+      </div>
+
+      <!-- 홈 버튼 -->
+      <button onclick="goHome()"
+              class="mt-4 w-12 h-12 rounded-full bg-gray-800 border border-gray-600 text-lg hover:bg-gray-700 transition-colors flex items-center justify-center"
+              title="홈으로">⬛</button>
+      <p class="text-xs text-gray-600 mt-1">홈 버튼</p>
+    </div>
+
+    <!-- ── 우측 컨트롤 패널 ── -->
+    <div class="flex-1 space-y-5 min-w-0 max-w-md">
+
+      <!-- 앱 컨트롤 카드 × 3 -->
+      <!-- SocialApp -->
+      <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
+               style="background:linear-gradient(135deg,#ec4899,#8b5cf6)">📸</div>
+          <div>
+            <div class="font-bold text-pink-300">SocialApp  <span class="code text-xs text-pink-600">Prism v2.1</span></div>
+            <div class="text-xs text-gray-500">소셜 미디어 앱 · 34.2 MB</div>
+          </div>
+        </div>
+        <div class="code text-xs bg-gray-800/60 rounded-lg p-3 text-gray-300 space-y-0.5 mb-3">
+          <div><span class="text-gray-500">followers =</span> <span id="s-followers" class="text-pink-400">1,024</span></div>
+          <div><span class="text-gray-500">unread   =</span> <span id="s-unread" class="text-yellow-400">3</span></div>
+          <div><span class="text-gray-500">posts    =</span> <span class="text-blue-400">["오늘 카페", "🌅 일몰", ...]</span></div>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="launchApp('SocialApp')"
+                  class="flex-1 bg-pink-700 hover:bg-pink-600 text-white text-sm rounded-xl py-2 font-semibold transition-colors">
+            ▶ launch()
+          </button>
+          <button onclick="notifyApp('SocialApp')"
+                  class="bg-gray-700 hover:bg-gray-600 text-gray-200 text-sm rounded-xl px-4 py-2 transition-colors">
+            🔔 notify()
+          </button>
+        </div>
+      </div>
+
+      <!-- GameApp -->
+      <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
+               style="background:linear-gradient(135deg,#f59e0b,#ef4444)">🎮</div>
+          <div>
+            <div class="font-bold text-amber-300">GameApp  <span class="code text-xs text-amber-600">ArcadeX v4.0</span></div>
+            <div class="text-xs text-gray-500">게임 앱 · 512.0 MB</div>
+          </div>
+        </div>
+        <div class="code text-xs bg-gray-800/60 rounded-lg p-3 text-gray-300 space-y-0.5 mb-3">
+          <div><span class="text-gray-500">score      =</span> <span id="g-score" class="text-amber-400">0</span></div>
+          <div><span class="text-gray-500">level      =</span> <span id="g-level" class="text-yellow-300">1</span></div>
+          <div><span class="text-gray-500">lives      =</span> <span id="g-lives" class="text-red-400">❤️❤️❤️</span></div>
+          <div><span class="text-gray-500">high_score =</span> <span id="g-hi" class="text-orange-400">8,500</span></div>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="launchApp('GameApp')"
+                  class="flex-1 bg-amber-700 hover:bg-amber-600 text-white text-sm rounded-xl py-2 font-semibold transition-colors">
+            ▶ launch()
+          </button>
+          <button onclick="notifyApp('GameApp')"
+                  class="bg-gray-700 hover:bg-gray-600 text-gray-200 text-sm rounded-xl px-4 py-2 transition-colors">
+            🔔 notify()
+          </button>
+        </div>
+      </div>
+
+      <!-- UtilityApp -->
+      <div class="bg-gray-900 border border-gray-800 rounded-2xl p-5">
+        <div class="flex items-center gap-3 mb-3">
+          <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl flex-shrink-0"
+               style="background:linear-gradient(135deg,#06b6d4,#3b82f6)">✅</div>
+          <div>
+            <div class="font-bold text-cyan-300">UtilityApp  <span class="code text-xs text-cyan-600">DoIt v1.5</span></div>
+            <div class="text-xs text-gray-500">할 일 관리 앱 · 8.7 MB</div>
+          </div>
+        </div>
+        <div class="code text-xs bg-gray-800/60 rounded-lg p-3 text-gray-300 space-y-0.5 mb-3">
+          <div><span class="text-gray-500">tasks     =</span> <span id="u-tasks" class="text-cyan-400">["과제 제출", "운동", ...]</span></div>
+          <div><span class="text-gray-500">reminders =</span> <span id="u-remind" class="text-yellow-400">2</span></div>
+          <div><span class="text-gray-500">storage   =</span> <span class="text-blue-400">128 MB used</span></div>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="launchApp('UtilityApp')"
+                  class="flex-1 bg-cyan-700 hover:bg-cyan-600 text-white text-sm rounded-xl py-2 font-semibold transition-colors">
+            ▶ launch()
+          </button>
+          <button onclick="notifyApp('UtilityApp')"
+                  class="bg-gray-700 hover:bg-gray-600 text-gray-200 text-sm rounded-xl px-4 py-2 transition-colors">
+            🔔 notify()
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     SECTION 3 — 로그
+══════════════════════════════════════════ -->
+<section>
+  <div class="flex justify-between items-center mb-3">
+    <h2 class="text-lg font-semibold text-indigo-300">③ 메서드 호출 로그</h2>
+    <button onclick="clearLog()" class="text-xs text-gray-600 hover:text-gray-400">지우기</button>
+  </div>
+  <div id="method-log"
+       class="code text-xs bg-gray-900 border border-gray-800 rounded-xl p-4 h-44 overflow-y-auto space-y-1.5">
+    <div class="text-gray-600">— 버튼을 클릭하여 다형성 메서드를 호출하세요 —</div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════
+     SECTION 4 — Python 코드
+══════════════════════════════════════════ -->
+<section>
+  <h2 class="text-lg font-semibold text-indigo-300 mb-4">④ Python OOP 구현 참조</h2>
+  <div class="bg-gray-900 border border-gray-800 rounded-xl p-5 code text-xs text-gray-300 leading-relaxed overflow-x-auto">
+<pre><span class="text-gray-500"># ─── Abstract Base Class ─────────────────────────</span>
+<span class="text-blue-400">from</span> abc <span class="text-blue-400">import</span> ABC, abstractmethod
+<span class="text-blue-400">from</span> typing <span class="text-blue-400">import</span> List
+
+<span class="text-blue-400">class</span> <span class="text-yellow-300">App</span>(ABC):
+    <span class="text-blue-400">def</span> <span class="text-green-300">__init__</span>(self, name: str, version: str, size_mb: float):
+        self.name       = name
+        self.version    = version
+        self.size_mb    = size_mb
+        self.battery    = 100
+        self.is_running = False
+
+    <span class="text-purple-400">@abstractmethod</span>
+    <span class="text-blue-400">def</span> <span class="text-green-300">launch</span>(self) -> str:  <span class="text-gray-500"># 다형성: 앱마다 다른 화면 표시</span>
+        <span class="text-blue-400">pass</span>
+
+    <span class="text-purple-400">@abstractmethod</span>
+    <span class="text-blue-400">def</span> <span class="text-green-300">notify</span>(self) -> str:  <span class="text-gray-500"># 다형성: 앱마다 다른 알림 내용</span>
+        <span class="text-blue-400">pass</span>
+
+    <span class="text-blue-400">def</span> <span class="text-green-300">close</span>(self):
+        self.is_running = False
+
+    <span class="text-blue-400">def</span> <span class="text-green-300">get_info</span>(self) -> str:
+        <span class="text-blue-400">return</span> f<span class="text-orange-300">"{self.__class__.__name__}({self.name} v{self.version})"</span>
+
+<span class="text-gray-500"># ─── SocialApp ────────────────────────────────────</span>
+<span class="text-blue-400">class</span> <span class="text-pink-300">SocialApp</span>(App):
+    <span class="text-blue-400">def</span> <span class="text-green-300">__init__</span>(self):
+        <span class="text-blue-400">super</span>().__init__(<span class="text-orange-300">"Prism"</span>, <span class="text-orange-300">"2.1"</span>, 34.2)
+        self.followers = 1024
+        self.unread    = 3
+
+    <span class="text-blue-400">def</span> <span class="text-green-300">launch</span>(self) -> str:         <span class="text-gray-500"># [Override]</span>
+        self.is_running = True
+        <span class="text-blue-400">return</span> f<span class="text-orange-300">"📸 피드 로드 완료 · 팔로워 {self.followers:,}명"</span>
+
+    <span class="text-blue-400">def</span> <span class="text-green-300">notify</span>(self) -> str:          <span class="text-gray-500"># [Override]</span>
+        self.unread += 1
+        <span class="text-blue-400">return</span> f<span class="text-orange-300">"💬 새 메시지 {self.unread}개 도착"</span>
+
+<span class="text-gray-500"># ─── GameApp ──────────────────────────────────────</span>
+<span class="text-blue-400">class</span> <span class="text-amber-300">GameApp</span>(App):
+    <span class="text-blue-400">def</span> <span class="text-green-300">__init__</span>(self):
+        <span class="text-blue-400">super</span>().__init__(<span class="text-orange-300">"ArcadeX"</span>, <span class="text-orange-300">"4.0"</span>, 512.0)
+        self.score      = 0
+        self.level      = 1
+        self.lives      = 3
+        self.high_score = 8500
+
+    <span class="text-blue-400">def</span> <span class="text-green-300">launch</span>(self) -> str:         <span class="text-gray-500"># [Override]</span>
+        <span class="text-blue-400">import</span> random
+        self.is_running  = True
+        self.score      += random.randint(100, 500)
+        <span class="text-blue-400">if</span> self.score > self.high_score: self.high_score = self.score
+        <span class="text-blue-400">return</span> f<span class="text-orange-300">"🎮 레벨 {self.level} 시작! 현재 점수: {self.score}"</span>
+
+    <span class="text-blue-400">def</span> <span class="text-green-300">notify</span>(self) -> str:          <span class="text-gray-500"># [Override]</span>
+        <span class="text-blue-400">return</span> <span class="text-orange-300">"🏆 업적 달성: 점수 마스터!"</span>
+
+<span class="text-gray-500"># ─── UtilityApp ───────────────────────────────────</span>
+<span class="text-blue-400">class</span> <span class="text-cyan-300">UtilityApp</span>(App):
+    <span class="text-blue-400">def</span> <span class="text-green-300">__init__</span>(self):
+        <span class="text-blue-400">super</span>().__init__(<span class="text-orange-300">"DoIt"</span>, <span class="text-orange-300">"1.5"</span>, 8.7)
+        self.tasks     = [<span class="text-orange-300">"과제 제출"</span>, <span class="text-orange-300">"운동"</span>, <span class="text-orange-300">"독서"</span>]
+        self.reminders = 2
+
+    <span class="text-blue-400">def</span> <span class="text-green-300">launch</span>(self) -> str:         <span class="text-gray-500"># [Override]</span>
+        self.is_running = True
+        <span class="text-blue-400">return</span> f<span class="text-orange-300">"✅ 할 일 {len(self.tasks)}개 · 오늘 {self.reminders}개 예정"</span>
+
+    <span class="text-blue-400">def</span> <span class="text-green-300">notify</span>(self) -> str:          <span class="text-gray-500"># [Override]</span>
+        task = self.tasks[0] <span class="text-blue-400">if</span> self.tasks <span class="text-blue-400">else</span> <span class="text-orange-300">"없음"</span>
+        <span class="text-blue-400">return</span> f<span class="text-orange-300">"⏰ 리마인더: '{task}' 마감 임박!"</span>
+
+<span class="text-gray-500"># ─── 다형성 데모 ──────────────────────────────────</span>
+apps: List[App] = [<span class="text-pink-300">SocialApp</span>(), <span class="text-amber-300">GameApp</span>(), <span class="text-cyan-300">UtilityApp</span>()]
+<span class="text-blue-400">for</span> app <span class="text-blue-400">in</span> apps:
+    print(app.get_info())
+    print(<span class="text-orange-300">"  launch() →"</span>, app.launch())   <span class="text-gray-500"># 같은 메서드, 다른 결과!</span>
+    print(<span class="text-orange-300">"  notify() →"</span>, app.notify())</pre>
+  </div>
+</section>
+
+</main>
+
+<footer class="border-t border-gray-800 py-5 text-center text-xs text-gray-700 mt-10">
+  2026 1학기 자료구조 과제 2 — OOP 설계 기반 인터랙티브 웹앱 (스마트폰 앱 테마)
+</footer>
+
+<!-- ═══════════════════════ JAVASCRIPT ═══════════════════════ -->
+<script>
+// ─────────────────────────────────────────
+// JS OOP 구현
+// ─────────────────────────────────────────
+class App {
+  constructor(name, version, sizeMb) {
+    if (new.target === App) throw new Error("App is abstract");
+    this.name      = name;
+    this.version   = version;
+    this.sizeMb    = sizeMb;
+    this.battery   = 100;
+    this.isRunning = false;
+  }
+  launch() { throw new Error("launch() must be overridden"); }
+  notify() { throw new Error("notify() must be overridden"); }
+  close()  { this.isRunning = false; }
+  getInfo(){ return `${this.constructor.name}(${this.name} v${this.version})`; }
+}
+
+class SocialApp extends App {
+  constructor() {
+    super("Prism", "2.1", 34.2);
+    this.followers = 1024;
+    this.unread    = 3;
+    this.posts     = ["오늘 카페 ☕", "🌅 일몰 사진", "점심 맛집 🍜"];
+  }
+  launch() {                            // [Override]
+    this.isRunning = true;
+    return { screen: "social", msg: `📸 피드 로드 완료 · 팔로워 ${this.followers.toLocaleString()}명` };
+  }
+  notify() {                            // [Override]
+    this.unread++;
+    document.getElementById('s-unread').textContent = this.unread;
+    return `💬 새 메시지 ${this.unread}개 도착`;
+  }
+}
+
+class GameApp extends App {
+  constructor() {
+    super("ArcadeX", "4.0", 512.0);
+    this.score     = 0;
+    this.level     = 1;
+    this.lives     = 3;
+    this.highScore = 8500;
+  }
+  launch() {                            // [Override]
+    this.isRunning  = true;
+    const gain      = Math.floor(Math.random() * 400) + 100;
+    this.score     += gain;
+    if (this.score > this.highScore) this.highScore = this.score;
+    // UI 업데이트
+    document.getElementById('g-score').textContent = this.score.toLocaleString();
+    document.getElementById('g-hi').textContent    = this.highScore.toLocaleString();
+    return { screen: "game", msg: `🎮 레벨 ${this.level} · +${gain}점 획득! 총 ${this.score.toLocaleString()}점` };
+  }
+  notify() {                            // [Override]
+    return "🏆 업적 달성: 점수 마스터!";
+  }
+}
+
+class UtilityApp extends App {
+  constructor() {
+    super("DoIt", "1.5", 8.7);
+    this.tasks     = ["과제 제출", "운동 30분", "독서", "메일 확인"];
+    this.reminders = 2;
+  }
+  launch() {                            // [Override]
+    this.isRunning = true;
+    return { screen: "utility", msg: `✅ 할 일 ${this.tasks.length}개 · 오늘 리마인더 ${this.reminders}개` };
+  }
+  notify() {                            // [Override]
+    const task = this.tasks[0] || "없음";
+    return `⏰ 리마인더: '${task}' 마감 임박!`;
+  }
+}
+
+// ─────────────────────────────────────────
+// 인스턴스
+// ─────────────────────────────────────────
+const apps = {
+  SocialApp:  new SocialApp(),
+  GameApp:    new GameApp(),
+  UtilityApp: new UtilityApp()
+};
+
+// ─────────────────────────────────────────
+// 시계
+// ─────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  const hh  = String(now.getHours()).padStart(2,'0');
+  const mm  = String(now.getMinutes()).padStart(2,'0');
+  const time = `${hh}:${mm}`;
+  const days = ['일','월','화','수','목','금','토'];
+  const date = `${now.getMonth()+1}월 ${now.getDate()}일 ${days[now.getDay()]}요일`;
+  document.getElementById('phone-time').textContent     = time;
+  document.getElementById('phone-time-big').textContent = time;
+  document.getElementById('phone-date').textContent     = date;
+}
+updateClock();
+setInterval(updateClock, 30000);
+
+// ─────────────────────────────────────────
+// 배터리 (시뮬레이션)
+// ─────────────────────────────────────────
+let batteryPct = 85;
+function drainBattery(pct) {
+  batteryPct = Math.max(5, batteryPct - pct);
+  document.getElementById('phone-battery-txt').textContent = batteryPct + '%';
+  const bar = document.getElementById('phone-battery-bar');
+  bar.style.width = batteryPct + '%';
+  bar.className = `battery-bar absolute left-0 top-0 bottom-0 rounded-sm ${
+    batteryPct > 50 ? 'bg-green-500' : batteryPct > 20 ? 'bg-yellow-400' : 'bg-red-500'}`;
+}
+
+// ─────────────────────────────────────────
+// 앱 실행 (launch)
+// ─────────────────────────────────────────
+const appScreens = {
+  social: (app) => `
+    <div class="w-full h-full flex flex-col" style="background:#1a0a2e">
+      <div class="flex items-center gap-2 px-4 pt-10 pb-3 border-b border-pink-900/40">
+        <span class="text-lg">📸</span>
+        <span class="font-bold text-pink-300 text-sm">Prism</span>
+        <span class="ml-auto text-xs bg-pink-900/60 text-pink-300 px-2 py-0.5 rounded-full">${app.followers.toLocaleString()} followers</span>
+      </div>
+      <div class="flex-1 overflow-y-auto px-3 py-2 space-y-2">
+        ${app.posts.map((p,i) => `
+        <div class="bg-pink-950/40 border border-pink-900/30 rounded-xl p-3">
+          <div class="text-xs text-gray-400 mb-1">@user${i+1}</div>
+          <div class="text-sm text-gray-100">${p}</div>
+          <div class="flex gap-3 mt-2 text-xs text-gray-500">
+            <span>❤️ ${Math.floor(Math.random()*200+10)}</span>
+            <span>💬 ${Math.floor(Math.random()*30)}</span>
+          </div>
+        </div>`).join('')}
+      </div>
+      <div class="px-3 py-2 border-t border-pink-900/30">
+        <div class="text-xs text-pink-400 code text-center">launch() → "${app.posts.length}개 포스트 로드"</div>
+      </div>
+    </div>`,
+
+  game: (app) => `
+    <div class="w-full h-full flex flex-col items-center justify-between" style="background:#1c0a00">
+      <div class="w-full flex items-center gap-2 px-4 pt-10 pb-2 border-b border-amber-900/40">
+        <span class="text-lg">🎮</span>
+        <span class="font-bold text-amber-300 text-sm">ArcadeX</span>
+      </div>
+      <div class="flex-1 flex flex-col items-center justify-center gap-4 px-4">
+        <div class="text-6xl font-black text-amber-400" style="text-shadow:0 0 20px #f59e0b">${app.score.toLocaleString()}</div>
+        <div class="text-xs text-gray-400">현재 점수</div>
+        <div class="flex gap-6 text-sm">
+          <div class="text-center"><div class="text-amber-300 font-bold">Lv.${app.level}</div><div class="text-xs text-gray-500">레벨</div></div>
+          <div class="text-center"><div class="text-red-400">${'❤️'.repeat(app.lives)}</div><div class="text-xs text-gray-500">목숨</div></div>
+          <div class="text-center"><div class="text-orange-300 font-bold">${app.highScore.toLocaleString()}</div><div class="text-xs text-gray-500">최고점수</div></div>
+        </div>
+        <div class="w-full bg-gray-800 rounded-xl overflow-hidden h-2 mt-2">
+          <div class="h-2 bg-gradient-to-r from-amber-500 to-red-500 rounded-xl" style="width:${Math.min(100, app.score/app.highScore*100)}%"></div>
+        </div>
+      </div>
+      <div class="px-3 py-2 border-t border-amber-900/30 w-full">
+        <div class="text-xs text-amber-400 code text-center">launch() → "점수 +${Math.floor(Math.random()*400+100)} 획득"</div>
+      </div>
+    </div>`,
+
+  utility: (app) => `
+    <div class="w-full h-full flex flex-col" style="background:#001a1f">
+      <div class="flex items-center gap-2 px-4 pt-10 pb-3 border-b border-cyan-900/40">
+        <span class="text-lg">✅</span>
+        <span class="font-bold text-cyan-300 text-sm">DoIt</span>
+        <span class="ml-auto text-xs text-gray-500">${app.tasks.length}개 남음</span>
+      </div>
+      <div class="flex-1 overflow-y-auto px-3 py-2 space-y-2">
+        ${app.tasks.map((t,i) => `
+        <div class="flex items-center gap-2 bg-cyan-950/30 border border-cyan-900/20 rounded-xl px-3 py-2.5">
+          <div class="w-4 h-4 border border-cyan-600 rounded flex-shrink-0 flex items-center justify-center text-xs">
+            ${i===0 ? '✓' : ''}
+          </div>
+          <span class="text-sm ${i===0 ? 'line-through text-gray-500' : 'text-gray-200'}">${t}</span>
+          ${i < app.reminders ? '<span class="ml-auto text-xs text-yellow-500">⏰</span>' : ''}
+        </div>`).join('')}
+      </div>
+      <div class="px-3 py-2 border-t border-cyan-900/30">
+        <div class="text-xs text-cyan-400 code text-center">launch() → "할 일 ${app.tasks.length}개 로드"</div>
+      </div>
+    </div>`
+};
+
+let currentApp = null;
+
+function launchApp(className) {
+  const app    = apps[className];
+  const result = app.launch();       // ← 다형성 호출!
+
+  drainBattery(2);
+
+  // 폰 화면에 앱 표시
+  const layer  = document.getElementById('app-layer');
+  layer.innerHTML = appScreens[result.screen](app);
+  layer.className = 'absolute inset-0 app-screen';
+  layer.style.display = 'block';
+  currentApp = className;
+
+  // 로그
+  const colors = { SocialApp:'text-pink-400', GameApp:'text-amber-400', UtilityApp:'text-cyan-400' };
+  appendLog(colors[className], `${app.getInfo()}.launch()`, result.msg);
+}
+
+function goHome() {
+  const layer = document.getElementById('app-layer');
+  if (layer.style.display === 'none' || !layer.innerHTML) return;
+  layer.className = 'absolute inset-0 app-screen-out';
+  setTimeout(() => { layer.style.display = 'none'; layer.innerHTML = ''; }, 250);
+  if (currentApp) apps[currentApp].close();
+  currentApp = null;
+}
+
+// ─────────────────────────────────────────
+// 알림 (notify)
+// ─────────────────────────────────────────
+function notifyApp(className) {
+  const app = apps[className];
+  const msg = app.notify();         // ← 다형성 호출!
+
+  drainBattery(1);
+
+  // 토스트 표시
+  showToast(className, msg);
+
+  const colors = { SocialApp:'text-pink-400', GameApp:'text-amber-400', UtilityApp:'text-cyan-400' };
+  appendLog(colors[className], `${app.getInfo()}.notify()`, msg);
+}
+
+const toastColors = {
+  SocialApp:  'border-pink-500 bg-pink-950/90',
+  GameApp:    'border-amber-500 bg-amber-950/90',
+  UtilityApp: 'border-cyan-500 bg-cyan-950/90'
+};
+
+function showToast(className, msg) {
+  const layer = document.getElementById('toast-layer');
+  const el    = document.createElement('div');
+  el.className = `toast rounded-xl border px-3 py-2.5 text-xs text-white shadow-lg ${toastColors[className]}`;
+  el.style.pointerEvents = 'none';
+  el.innerHTML = `<div class="font-semibold mb-0.5">${className}</div><div class="text-gray-300">${msg}</div>`;
+  layer.appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+
+// ─────────────────────────────────────────
+// UML 정보 패널
+// ─────────────────────────────────────────
+const umlData = {
+  App: {
+    title: 'App  〈Abstract Class〉',
+    titleClass: 'text-indigo-300',
+    desc: '모든 스마트폰 앱의 공통 속성(name, version, size_mb, battery)과 추상 메서드 launch(), notify()를 정의하는 ADT입니다. 직접 인스턴스화 불가하며 서브클래스가 두 메서드를 반드시 오버라이딩해야 합니다.',
+    code: 'class App(ABC):\n    @abstractmethod\n    def launch(self): pass\n\n    @abstractmethod\n    def notify(self): pass'
+  },
+  SocialApp: {
+    title: 'SocialApp  〈extends App〉',
+    titleClass: 'text-pink-300',
+    desc: '소셜 미디어 앱. launch() 오버라이딩 시 피드와 팔로워 수를 보여주고, notify()는 새 메시지 알림을 반환합니다.',
+    code: 'class SocialApp(App):\n    def launch(self) -> str:\n        return f"📸 피드 · 팔로워 {self.followers:,}명"\n\n    def notify(self) -> str:\n        self.unread += 1\n        return f"💬 새 메시지 {self.unread}개"'
+  },
+  GameApp: {
+    title: 'GameApp  〈extends App〉',
+    titleClass: 'text-amber-300',
+    desc: '게임 앱. launch() 호출 시 랜덤 점수가 누적되고 최고 점수를 갱신합니다. notify()는 업적 달성 알림을 반환합니다.',
+    code: 'class GameApp(App):\n    def launch(self) -> str:\n        self.score += random.randint(100,500)\n        return f"🎮 점수: {self.score}"\n\n    def notify(self) -> str:\n        return "🏆 업적 달성!"'
+  },
+  UtilityApp: {
+    title: 'UtilityApp  〈extends App〉',
+    titleClass: 'text-cyan-300',
+    desc: '할 일 관리 앱. launch() 시 태스크 목록을 표시하고, notify()는 마감이 임박한 태스크를 리마인드합니다.',
+    code: 'class UtilityApp(App):\n    def launch(self) -> str:\n        return f"✅ 할 일 {len(self.tasks)}개"\n\n    def notify(self) -> str:\n        return f"⏰ \'{self.tasks[0]}\' 마감 임박!"'
+  }
+};
+
+function showUmlInfo(name) {
+  document.querySelectorAll('.uml-node').forEach(n => n.classList.remove('uml-selected'));
+  document.getElementById(`uml-${name}`).classList.add('uml-selected');
+  const d = umlData[name];
+  const panel = document.getElementById('uml-panel');
+  document.getElementById('up-title').textContent  = d.title;
+  document.getElementById('up-title').className    = `text-lg font-bold mb-2 ${d.titleClass}`;
+  document.getElementById('up-desc').textContent   = d.desc;
+  document.getElementById('up-code').textContent   = d.code;
+  panel.classList.remove('hidden');
+}
+
+// ─────────────────────────────────────────
+// 로그
+// ─────────────────────────────────────────
+function appendLog(colorClass, method, result) {
+  const log = document.getElementById('method-log');
+  const el  = document.createElement('div');
+  el.className = 'log-entry flex gap-2';
+  const t = new Date().toLocaleTimeString('ko-KR');
+  el.innerHTML = `
+    <span class="text-gray-600 flex-shrink-0">${t}</span>
+    <span class="${colorClass} font-semibold flex-shrink-0">${method}</span>
+    <span class="text-gray-400">→ ${result}</span>`;
+  log.appendChild(el);
+  log.scrollTop = log.scrollHeight;
+}
+
+function clearLog() {
+  document.getElementById('method-log').innerHTML =
+    '<div class="text-gray-600">— 로그가 지워졌습니다 —</div>';
+}
+</script>
+</body>
+</html>
